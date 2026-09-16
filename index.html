@@ -22,13 +22,20 @@ p{line-height:1.5;margin:0 0 12px}
 h2{font-size:1.25rem;font-weight:700;margin:36px 0 12px;display:flex;align-items:center;gap:10px}
 h2 .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--plastic);color:var(--W);font-size:.95rem}
 .shots{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.shot{border:2px dashed var(--line);border-radius:14px;padding:12px;background:#E9EFF3;display:flex;flex-direction:column;gap:8px;cursor:pointer;position:relative;min-height:170px}
-.shot:focus-within{outline:3px solid var(--B);outline-offset:2px}
+.shot{border:2px dashed var(--line);border-radius:14px;padding:12px;background:#E9EFF3;display:flex;flex-direction:column;gap:8px;position:relative;min-height:170px}
+.shot small{flex:1}
+.pick{display:flex;gap:6px}
+.pbtn{flex:1;position:relative;text-align:center;font-weight:600;font-size:.88rem;padding:10px 4px;border-radius:999px;background:var(--plastic);color:var(--W);cursor:pointer}
+.pbtn.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--plastic)}
+.pbtn:focus-within{outline:3px solid var(--B);outline-offset:2px}
+.pbtn input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.markbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:-14px 0 24px}
+.markbar span{font-size:.85rem;color:var(--soft)}
+.markbar button{padding:9px 16px;font-size:.9rem}
 .shot b{font-weight:600}
 .shot small{color:var(--soft);line-height:1.35;font-size:.82rem}
 .shot img{width:100%;height:110px;object-fit:cover;border-radius:9px;display:none}
 .shot.has img{display:block}.shot.has small{display:none}
-.shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
 button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:14px 22px;background:var(--plastic);color:var(--W);cursor:pointer;font-size:1rem}
 button:disabled{opacity:.4;cursor:default}
 button.ghost{background:transparent;color:var(--ink);border:2px solid var(--plastic)}
@@ -64,7 +71,7 @@ button:focus-visible,.stk:focus-visible,.sw:focus-visible,.mv:focus-visible{outl
 .mv.done em{color:#5d656c}
 .mv.next{background:var(--Y)}
 .done-msg{margin-top:18px;font-weight:600}
-.mark{position:relative;margin:14px 0 24px;border-radius:14px;overflow:hidden;background:var(--plastic)}
+.mark{position:relative;margin:14px 0 20px;border-radius:14px;overflow:hidden;background:var(--plastic)}
 .mark img{display:block;width:100%;height:auto}
 .mark svg{position:absolute;inset:0;width:100%;height:100%}
 .mark .cap{position:absolute;left:10px;top:10px;background:var(--plastic);color:var(--W);font-size:.85rem;padding:4px 10px;border-radius:999px}
@@ -86,8 +93,10 @@ html:has(body.dragging),body.dragging{overflow:hidden;touch-action:none;overscro
 
   <h2><span class="n">1</span>Prends les photos</h2>
   <div class="shots">
-    <label class="shot" id="shot1"><b>Photo 1</b><small>Une arête verticale face à toi : on voit le dessus et deux faces.</small><img alt="Photo 1"><input type="file" accept="image/*" data-i="0"></label>
-    <label class="shot" id="shot2"><b>Photo 2</b><small>Retourne la tour tête en bas et tourne-la pour voir les deux autres faces, arête face à toi.</small><img alt="Photo 2"><input type="file" accept="image/*" data-i="1"></label>
+    <div class="shot" id="shot1"><b>Photo 1</b><small>Une arête verticale face à toi : on voit le dessus et deux faces.</small><img alt="Photo 1">
+      <div class="pick"><label class="pbtn">Prendre<input type="file" accept="image/*" capture="environment" data-i="0"></label><label class="pbtn alt">Galerie<input type="file" accept="image/*" data-i="0"></label></div></div>
+    <div class="shot" id="shot2"><b>Photo 2</b><small>Retourne la tour tête en bas et tourne-la pour voir les deux autres faces, arête face à toi.</small><img alt="Photo 2">
+      <div class="pick"><label class="pbtn">Prendre<input type="file" accept="image/*" capture="environment" data-i="1"></label><label class="pbtn alt">Galerie<input type="file" accept="image/*" data-i="1"></label></div></div>
   </div>
   <div class="row"><button class="ghost" id="manualBtn">Saisir les couleurs à la main</button></div>
   <div class="status" id="readStatus"></div>
@@ -218,15 +227,107 @@ function loadImage(file){return new Promise((res,rej)=>{const r=new FileReader()
   cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,cv.width,cv.height);
   res({url:cv.toDataURL('image/jpeg',.9),w:cv.width,h:cv.height,data:ctx.getImageData(0,0,cv.width,cv.height).data});};img.src=r.result;};r.readAsDataURL(file);});}
 function setStatus(id,msg,err){const el=$(id);el.textContent=msg;el.classList.toggle('err',!!err);}
-document.querySelectorAll('.shot input').forEach(inp=>inp.addEventListener('change',async()=>{
+document.querySelectorAll('.pbtn input').forEach(inp=>inp.addEventListener('change',async()=>{
   const f=inp.files[0];if(!f)return;const i=+inp.dataset.i;
   try{const ph=await loadImage(f);
-    ph.pts={F:[.49,.19],L:[.19,.28],N:[.47,.40],R:[.78,.29],LB:[.28,.75],NB:[.47,.84],RB:[.68,.74]};
-    for(const k in ph.pts)ph.pts[k]=[ph.pts[k][0]*ph.w,ph.pts[k][1]*ph.h];
+    autoPlace(ph);inp.value='';
     photos[i]=ph;const lab=inp.closest('.shot');lab.classList.add('has');lab.querySelector('img').src=ph.url;
     setStatus('readStatus','');renderMarks();readPhoto(i);openEditor(false);
   }catch(e){setStatus('readStatus','Impossible d\'ouvrir cette image. Essaie une photo JPEG ou PNG.',true);}
 }));
+
+// ---------- automatic corner detection ----------
+function detectCorners(ph){
+  // downscale
+  const W=200,H=Math.round(ph.h*W/ph.w),sx=ph.w/W,sy=ph.h/H;
+  const m=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    // average a small block
+    let r=0,g=0,b=0,n=0;
+    for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const X=Math.min(ph.w-1,Math.floor((x+dx/2+.25)*sx)),Y=Math.min(ph.h-1,Math.floor((y+dy/2+.25)*sy)),o=(Y*ph.w+X)*4;r+=ph.data[o];g+=ph.data[o+1];b+=ph.data[o+2];n++;}
+    r/=n*255;g/=n*255;b/=n*255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,s=mx?d/mx:0,v=mx;
+    let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;}
+    const woody=h>=18&&h<=45;
+    m[y*W+x]=((v>.2&&(s>.62||(s>.45&&!woody)))||v<.2||(s<.3&&v>.85))?1:0;
+  }
+  // morphological close (dilate then erode) radius 1
+  const morph=(src,val)=>{const d=new Uint8Array(W*H);for(let y=0;y<H;y++)for(let x=0;x<W;x++){let out=!val;
+    for(let dy=-1;dy<=1&&out!==val;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=W||Y>=H)continue;if(src[Y*W+X]===(val?1:0)){out=val;break;}}
+    d[y*W+x]=out?1:0;}return d;};
+  let mm=morph(morph(m,true),false);
+  // erode once more then dilate (open) to cut thin bridges
+  mm=morph(morph(morph(morph(mm,false),false),true),true);
+  // components
+  const lab=new Int32Array(W*H).fill(-1);let best=null;
+  for(let i=0;i<W*H;i++){if(!mm[i]||lab[i]>=0)continue;
+    const st=[i];lab[i]=i;const pts=[];let border=false;
+    while(st.length){const j=st.pop(),x=j%W,y=(j/W)|0;pts.push(j);if(x===0||y===0||x===W-1||y===H-1)border=true;
+      for(const k of [j-1,j+1,j-W,j+W]){if(k<0||k>=W*H)continue;if((k===j-1&&x===0)||(k===j+1&&x===W-1))continue;if(mm[k]&&lab[k]<0){lab[k]=i;st.push(k);}}}
+    const cx=pts.reduce((a,j)=>a+j%W,0)/pts.length,cy=pts.reduce((a,j)=>a+((j/W)|0),0)/pts.length;
+    const centr=1-Math.hypot(cx/W-.5,cy/H-.5);
+    const score=pts.length*(border?.3:1)*centr;
+    if(!best||score>best.score)best={score,pts};}
+  if(!best||best.pts.length<W*H*.03)return null;
+  // convex hull (monotone chain)
+  const P=best.pts.map(j=>[j%W+.5,((j/W)|0)+.5]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[],up=[];
+  for(const p of P){while(lo.length>=2&&cross(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}
+  for(let i=P.length-1;i>=0;i--){const p=P[i];while(up.length>=2&&cross(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}
+  let hull=lo.slice(0,-1).concat(up.slice(0,-1));
+  // max-area hexagon with vertices among hull points
+  if(hull.length>60){const step=hull.length/60;hull=Array.from({length:60},(_,i)=>hull[Math.floor(i*step)]);}
+  if(hull.length>6){
+    const n=hull.length,tri=(a,b,c)=>Math.abs(cross(hull[a],hull[b],hull[c]))/2;
+    let bestA=-1,bestSel=null;
+    for(let s0=0;s0<n;s0++){
+      // dp[k][j]: max area of fan s0..j using k extra vertices, j index offset
+      const dp=Array.from({length:6},()=>new Float64Array(n).fill(-1)),pr=Array.from({length:6},()=>new Int32Array(n).fill(-1));
+      for(let j=1;j<n;j++)dp[1][j]=0;
+      for(let k=2;k<6;k++)for(let j=k;j<n;j++){for(let i=k-1;i<j;i++){if(dp[k-1][i]<0)continue;
+        const v=dp[k-1][i]+tri(s0,(s0+i)%n,(s0+j)%n);if(v>dp[k][j]){dp[k][j]=v;pr[k][j]=i;}}}
+      for(let j=5;j<n;j++)if(dp[5][j]>bestA){bestA=dp[5][j];const sel=[j];let k=5,c=j;while(k>1){c=pr[k][c];sel.push(c);k--;}sel.push(0);bestSel=sel.reverse().map(x=>(s0+x)%n);}
+    }
+    hull=bestSel.map(i=>hull[i]);
+  }
+  if(hull.length<6)return null;
+  // order: start at topmost, go clockwise on screen (y down => clockwise means cross>0 ordering)
+  let top=0;hull.forEach((p,i)=>{if(p[1]<hull[top][1])top=i;});
+  hull=hull.slice(top).concat(hull.slice(0,top));
+  // monotone chain gives counter-clockwise in math coords (y up) == clockwise on screen? check via next point x
+  if(hull[1][0]<hull[5][0])hull=[hull[0]].concat(hull.slice(1).reverse());
+  // refine: fit a line to boundary pixels along each silhouette edge, then intersect
+  const inComp=new Uint8Array(W*H);best.pts.forEach(j=>inComp[j]=1);
+  const bnd=[];best.pts.forEach(j=>{const x=j%W,y=(j/W)|0;
+    if(x===0||y===0||x===W-1||y===H-1||!inComp[j-1]||!inComp[j+1]||!inComp[j-W]||!inComp[j+W])bnd.push([x+.5,y+.5]);});
+  const hom=p=>[p[0],p[1],1];
+  const X=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const pt=h=>Math.abs(h[2])<1e-9?null:[h[0]/h[2],h[1]/h[2]];
+  const lines=[];
+  for(let e=0;e<6;e++){const p=hull[e],q=hull[(e+1)%6],dx=q[0]-p[0],dy=q[1]-p[1],len=Math.hypot(dx,dy)||1;
+    const sel=bnd.filter(b=>{const t=((b[0]-p[0])*dx+(b[1]-p[1])*dy)/(len*len);const d=Math.abs((b[0]-p[0])*dy-(b[1]-p[1])*dx)/len;return t>.15&&t<.85&&d<3;});
+    if(sel.length<5){lines.push(X(hom(p),hom(q)));continue;}
+    const mx=sel.reduce((a,b)=>a+b[0],0)/sel.length,my=sel.reduce((a,b)=>a+b[1],0)/sel.length;
+    let sxx=0,sxy=0,syy=0;sel.forEach(b=>{const u=b[0]-mx,v=b[1]-my;sxx+=u*u;sxy+=u*v;syy+=v*v;});
+    const ang=.5*Math.atan2(2*sxy,sxx-syy),ux=Math.cos(ang),uy=Math.sin(ang);
+    lines.push(X([mx,my,1],[mx+ux,my+uy,1]));}
+  const V=[];for(let e=0;e<6;e++){const p=pt(X(lines[(e+5)%6],lines[e]));V.push(p&&Math.hypot(p[0]-hull[e][0],p[1]-hull[e][1])<W*.15?p:hull[e]);}
+  const [F0,R0,RB0,NB0,LB0,L0]=V;
+  // near-top vertex from vanishing points: L-N // F-R // LB-NB ; R-N // F-L // RB-NB
+  const VR=X(X(hom(F0),hom(R0)),X(hom(LB0),hom(NB0))),VL=X(X(hom(F0),hom(L0)),X(hom(RB0),hom(NB0)));
+  let N0=pt(X(X(hom(L0),VR),X(hom(R0),VL)));
+  if(!N0||N0[1]<F0[1]||N0[1]>NB0[1])N0=[L0[0]+R0[0]-F0[0],L0[1]+R0[1]-F0[1]];
+  const S=p=>[p[0]*sx,p[1]*sy];
+  const F=S(F0),R=S(R0),RB=S(RB0),NB=S(NB0),LB=S(LB0),L=S(L0),N=S(N0);
+  return {F,L,N,R,LB,NB,RB};
+}
+
+function autoPlace(ph){
+  let d=null;try{d=detectCorners(ph);}catch(e){d=null;}
+  if(d){ph.pts=d;ph.auto=true;}
+  else{const t={F:[.49,.19],L:[.19,.28],N:[.47,.40],R:[.78,.29],LB:[.28,.75],NB:[.47,.84],RB:[.68,.74]};
+    ph.pts={};for(const k in t)ph.pts[k]=[t[k][0]*ph.w,t[k][1]*ph.h];ph.auto=false;}
+}
 
 // geometry: unit square -> quad (0,0)=p0,(1,0)=p1,(1,1)=p2,(0,1)=p3
 function sq2quad(p0,p1,p2,p3){
@@ -293,6 +394,10 @@ function renderMarks(){
     wrap.innerHTML=`<img src="${ph.url}" alt="Photo ${i+1}"><span class="cap">Photo ${i+1}</span>`;
     const svg=document.createElementNS(SVGNS,'svg');svg.setAttribute('viewBox',`0 0 ${ph.w} ${ph.h}`);svg.setAttribute('preserveAspectRatio','none');
     wrap.appendChild(svg);box.appendChild(wrap);
+    const bar=document.createElement('div');bar.className='markbar';
+    bar.innerHTML=`<span>${ph.auto?'Coins placés automatiquement, ajuste si besoin.':'Coins non trouvés : place-les à la main.'}</span>`;
+    const rb=document.createElement('button');rb.className='ghost';rb.textContent='Recaler';
+    rb.onclick=()=>{autoPlace(ph);readPhoto(i);renderMarks();renderEditor();};bar.appendChild(rb);box.appendChild(bar);
     const u=ph.w/100;
     const draw=()=>{
       svg.innerHTML='';
