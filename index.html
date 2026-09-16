@@ -74,6 +74,7 @@ button:focus-visible,.stk:focus-visible,.sw:focus-visible,.mv:focus-visible{outl
 .mark .hdl circle.ring{fill:rgba(255,255,255,.18);stroke:#fff}
 .mark .hdl circle.dot{fill:#FF2D9B}
 .mark .smp{stroke:#fff}
+html:has(body.dragging),body.dragging{overflow:hidden;touch-action:none;overscroll-behavior:none}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -305,11 +306,12 @@ function renderMarks(){
       Object.keys(ph.pts).forEach(name=>{
         const g=document.createElementNS(SVGNS,'g');g.setAttribute('class','hdl');g.setAttribute('transform',`translate(${ph.pts[name][0]},${ph.pts[name][1]})`);
         g.innerHTML=`<circle class="hit" r="${u*7}"/><circle class="ring" r="${u*3.2}" stroke-width="${u*.5}"/><circle class="dot" r="${u*.9}"/>`;
-        g.addEventListener('pointerdown',ev=>{ev.preventDefault();g.setPointerCapture(ev.pointerId);
+        g.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+        g.addEventListener('pointerdown',ev=>{ev.preventDefault();g.setPointerCapture(ev.pointerId);document.body.classList.add('dragging');
           const move=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());
             ph.pts[name]=[Math.max(0,Math.min(ph.w,q.x)),Math.max(0,Math.min(ph.h,q.y))];g.setAttribute('transform',`translate(${ph.pts[name][0]},${ph.pts[name][1]})`);
             svg.querySelectorAll('line').forEach((l,idx)=>{const [a,b]=EDGES[idx];l.setAttribute('x1',ph.pts[a][0]);l.setAttribute('y1',ph.pts[a][1]);l.setAttribute('x2',ph.pts[b][0]);l.setAttribute('y2',ph.pts[b][1]);});};
-          const up=()=>{g.removeEventListener('pointermove',move);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);
+          const up=()=>{document.body.classList.remove('dragging');g.removeEventListener('pointermove',move);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);
             readPhoto(i);draw();renderEditor();};
           g.addEventListener('pointermove',move);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);});
         svg.appendChild(g);});
