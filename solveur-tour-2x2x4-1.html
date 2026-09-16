@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résous ta tour 2×2×4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wall:#DCE5EB; --ink:#1E2932; --soft:#5B6873; --plastic:#191A1C; --line:#B9C6CF;
+  --W:#F6F6F2; --B:#1E9BE2; --R:#C9252C; --O:#F27A17; --Y:#F3D31C; --G:#1EA84B; --E:#8E9AA3;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--wall);color:var(--ink);font-family:Rubik,ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:560px;margin:0 auto;padding:28px 18px 64px}
+h1{font-size:2.3rem;line-height:1.02;font-weight:800;letter-spacing:-.02em;margin:0 0 10px}
+h1 .bar{display:flex;gap:5px;margin-bottom:14px}
+h1 .bar i{width:22px;height:22px;border-radius:5px;border:3px solid var(--plastic)}
+p{line-height:1.5;margin:0 0 12px}
+.lead{color:var(--soft);font-size:1.02rem;max-width:44ch}
+h2{font-size:1.25rem;font-weight:700;margin:36px 0 12px;display:flex;align-items:center;gap:10px}
+h2 .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--plastic);color:var(--W);font-size:.95rem}
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shot{border:2px dashed var(--line);border-radius:14px;padding:12px;background:#E9EFF3;display:flex;flex-direction:column;gap:8px;cursor:pointer;position:relative;min-height:170px}
+.shot:focus-within{outline:3px solid var(--B);outline-offset:2px}
+.shot b{font-weight:600}
+.shot small{color:var(--soft);line-height:1.35;font-size:.82rem}
+.shot img{width:100%;height:110px;object-fit:cover;border-radius:9px;display:none}
+.shot.has img{display:block}.shot.has small{display:none}
+.shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:14px 22px;background:var(--plastic);color:var(--W);cursor:pointer;font-size:1rem}
+button:disabled{opacity:.4;cursor:default}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--plastic)}
+button:focus-visible,.stk:focus-visible,.sw:focus-visible,.mv:focus-visible{outline:3px solid var(--B);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.status{font-size:.92rem;color:var(--soft);margin-top:10px;min-height:1.3em}
+.status.err{color:var(--R);font-weight:500}
+.palette{display:flex;gap:8px;position:sticky;top:0;z-index:5;background:var(--wall);padding:10px 0}
+.sw{width:42px;height:42px;border-radius:10px;border:3px solid var(--plastic);cursor:pointer;position:relative}
+.sw[aria-pressed=true]{transform:translateY(-4px);box-shadow:0 4px 0 var(--plastic)}
+.sw span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:.7rem;color:var(--soft)}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+.view{display:flex;flex-direction:column;align-items:center;gap:6px}
+.view .cap{font-size:.85rem;color:var(--soft)}
+.diamond{width:78px;height:78px;display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:var(--plastic);border-radius:6px;transform:scaleY(.62) rotate(45deg);margin:8px 0 2px}
+.faces{display:flex;gap:4px}
+.face{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:var(--plastic);border-radius:6px}
+.stk{width:36px;height:36px;border-radius:5px;border:0;padding:0;background:var(--E);cursor:pointer}
+.diamond .stk{width:100%;height:100%}
+.counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;font-size:.85rem}
+.counts span{display:flex;align-items:center;gap:4px;padding:3px 8px 3px 4px;border-radius:999px;background:#E9EFF3}
+.counts i{width:14px;height:14px;border-radius:4px;border:2px solid var(--plastic)}
+.counts .bad{color:var(--R);font-weight:600}
+.hold{background:var(--plastic);color:var(--W);border-radius:16px;padding:16px 18px;line-height:1.5}
+.hold .c{display:inline-block;width:16px;height:16px;border-radius:4px;vertical-align:-3px;border:2px solid #444}
+.legend{font-size:.9rem;color:var(--soft);margin:14px 0}
+.legend p{margin:0 0 6px}
+.moves{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.mv{border:2px solid var(--plastic);background:#F2F5F7;color:var(--ink);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;font:inherit}
+.mv em{display:block;font-style:normal;font-size:.68rem;color:var(--soft)}
+.mv strong{font-size:1.15rem;font-weight:700}
+.mv.done{background:var(--plastic);color:#7E8790;border-color:var(--plastic)}
+.mv.done em{color:#5d656c}
+.mv.next{background:var(--Y)}
+.done-msg{margin-top:18px;font-weight:600}
+.mark{position:relative;margin:14px 0 24px;border-radius:14px;overflow:hidden;background:var(--plastic)}
+.mark img{display:block;width:100%;height:auto}
+.mark svg{position:absolute;inset:0;width:100%;height:100%}
+.mark .cap{position:absolute;left:10px;top:10px;background:var(--plastic);color:var(--W);font-size:.85rem;padding:4px 10px;border-radius:999px}
+.mark .edge{fill:none;stroke:#fff;stroke-opacity:.9}
+.mark .hdl{touch-action:none;cursor:grab}
+.mark .hdl circle.hit{fill:transparent}
+.mark .hdl circle.ring{fill:rgba(255,255,255,.18);stroke:#fff}
+.mark .hdl circle.dot{fill:#FF2D9B}
+.mark .smp{stroke:#fff}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <h1><div class="bar" aria-hidden="true"><i style="background:var(--R)"></i><i style="background:var(--O)"></i><i style="background:var(--Y)"></i><i style="background:var(--G)"></i><i style="background:var(--B)"></i><i style="background:var(--W)"></i></div>Résous ta tour 2×2×4</h1>
+  <p class="lead">Deux photos de ta tour mélangée, et tu obtiens la liste des mouvements pour la résoudre.</p>
+
+  <h2><span class="n">1</span>Prends les photos</h2>
+  <div class="shots">
+    <label class="shot" id="shot1"><b>Photo 1</b><small>Une arête verticale face à toi : on voit le dessus et deux faces.</small><img alt="Photo 1"><input type="file" accept="image/*" data-i="0"></label>
+    <label class="shot" id="shot2"><b>Photo 2</b><small>Retourne la tour tête en bas et tourne-la pour voir les deux autres faces, arête face à toi.</small><img alt="Photo 2"><input type="file" accept="image/*" data-i="1"></label>
+  </div>
+  <div class="row"><button class="ghost" id="manualBtn">Saisir les couleurs à la main</button></div>
+  <div class="status" id="readStatus"></div>
+
+  <section id="markSec" hidden>
+    <h2><span class="n">2</span>Place les coins</h2>
+    <p>Fais glisser les 7 points sur les coins de la tour pour que le contour suive ses arêtes. Les couleurs se lisent quand tu lâches un point.</p>
+    <div id="marks"></div>
+  </section>
+
+  <section id="editSec" hidden>
+    <h2><span class="n">3</span>Vérifie les couleurs</h2>
+    <p>Compare avec tes photos. Choisis une couleur puis touche les cases à corriger. Le rouge dans l'ombre ressemble souvent à de l'orange.</p>
+    <div class="palette" id="palette"></div>
+    <div class="views" id="views"></div>
+    <div class="counts" id="counts"></div>
+    <div class="row"><button id="solveBtn">Calculer la solution</button></div>
+    <div class="status" id="solveStatus"></div>
+  </section>
+
+  <section id="solSec" hidden>
+    <h2><span class="n">4</span>Suis les mouvements</h2>
+    <div class="hold" id="hold"></div>
+    <div class="legend">
+      <p><strong>1 ←</strong> étage 1 (en haut) d'un quart de tour, la face avant part vers la gauche. <strong>→</strong> vers la droite, <strong>½</strong> demi-tour. Les étages vont de 1 (haut) à 4 (bas).</p>
+      <p><strong>Droite ½</strong> la moitié droite de la tour fait un demi-tour par-dessus. Pareil pour Gauche, Avant et Arrière.</p>
+    </div>
+    <p id="solInfo"></p>
+    <div class="moves" id="moves"></div>
+    <p class="done-msg" id="doneMsg" hidden>Terminé : chaque face devrait être d'une seule couleur.</p>
+    <div class="row"><button class="ghost" id="resetBtn">Remettre à zéro la liste</button></div>
+  </section>
+</main>
+
+<script type="text/plain" id="solverSrc">
+const FACT=[1,1,2,6,24,120,720,5040];
+function rank(p){let r=0;for(let i=0;i<8;i++){let c=0;for(let j=i+1;j<8;j++)if(p[j]<p[i])c++;r+=c*FACT[7-i];}return r;}
+function unrank(r){const a=[0,1,2,3,4,5,6,7],p=[];for(let i=0;i<8;i++){const f=FACT[7-i],q=Math.floor(r/f);r%=f;p.push(a.splice(q,1)[0]);}return p;}
+const POS=(l,c)=>l*4+c;
+function idMap(){return [0,1,2,3,4,5,6,7];}
+function layerMap(l){const s=idMap();for(let k=0;k<4;k++)s[POS(l,(k+1)%4)]=POS(l,k);return s;}
+function halfMap(a,b){const s=idMap();for(let l=0;l<2;l++){s[POS(1-l,b)]=POS(l,a);s[POS(1-l,a)]=POS(l,b);}return s;}
+function comp(s1,s2){return s2.map(x=>s1[x]);}
+const MOVES=[];
+[['U','c',0],['u','m',0],['d','m',1],['D','c',1]].forEach(([n,t,l])=>{
+  const s1=layerMap(l),s2=comp(s1,s1),s3=comp(s2,s1);
+  [[n,s1],[n+'2',s2],[n+"'",s3]].forEach(([nm,s])=>MOVES.push({name:nm,g:n,c:t==='c'?s:idMap(),m:t==='m'?s:idMap()}));
+});
+[['R2','R',0,3],['L2','L',1,2],['F2','F',0,1],['B2','B',2,3]].forEach(([nm,g,a,b])=>{const s=halfMap(a,b);MOVES.push({name:nm,g,c:s,m:s});});
+const NM=MOVES.length,N=40320;
+let cT,mT,cD,mD,ALLOW,GOAL,ready=false;
+function bfs(tables,src){const d=new Uint8Array(N).fill(255);let fr=[src];d[src]=0;let k=0;
+  while(fr.length){const nf=[];for(const x of fr)for(let i=0;i<NM;i++){const y=tables[i][x];if(d[y]===255){d[y]=k+1;nf.push(y);}}fr=nf;k++;}return d;}
+function init(){
+  if(ready)return; cT=[];mT=[];
+  for(const mv of MOVES){const tc=new Uint16Array(N),tm=new Uint16Array(N);
+    for(let r=0;r<N;r++){const p=unrank(r);tc[r]=rank(mv.c.map(x=>p[x]));tm[r]=rank(mv.m.map(x=>p[x]));}
+    cT.push(tc);mT.push(tm);}
+  const ORD={U:0,u:1,d:2,D:3};ALLOW=[];
+  for(let i=0;i<=NM;i++){ALLOW.push([]);for(let j=0;j<NM;j++){
+    if(i===NM){ALLOW[i].push(j);continue;}const a=MOVES[i].g,b=MOVES[j].g;
+    if(a===b)continue;if(a in ORD&&b in ORD&&ORD[a]>ORD[b])continue;
+    if((a==='L'&&b==='R')||(a==='B'&&b==='F'))continue;ALLOW[i].push(j);}}
+  GOAL=[];for(let r=0;r<4;r++){const p=[];for(let l=0;l<2;l++)for(let c=0;c<4;c++)p.push(l*4+(c+r)%4);GOAL.push(rank(p));}
+  cD=GOAL.map(g=>bfs(cT,g));mD=GOAL.map(g=>bfs(mT,g));ready=true;
+}
+function toState(pieces,cyc){
+  const nx={};for(let i=0;i<4;i++)nx[cyc[i]]=cyc[(i+1)%4];
+  const idx=c=>cyc.indexOf(c);
+  const cp=new Array(8).fill(-1),mp=new Array(8).fill(-1);
+  for(const pc of pieces){
+    const {z,col,p,q}=pc;
+    if(nx[p]!==q&&nx[q]!==p)throw new Error('pair');
+    const fwd=nx[p]===q;
+    if(z===0||z===3){const cl=z===0?0:1,native=pc.capTop?0:1;
+      if(fwd!==(native===cl))throw new Error('corner');
+      cp[POS(cl,col)]=native*4+(fwd?idx(p):idx(q));}
+    else{const ml=z-1,native=fwd?ml:1-ml;mp[POS(ml,col)]=native*4+(fwd?idx(p):idx(q));}
+  }
+  for(const a of [cp,mp]){const s=new Set(a);if(s.size!==8||s.has(-1))throw new Error('dup');}
+  return [rank(cp),rank(mp)];
+}
+function solveOpt(c0,m0,limit){
+  const t0=Date.now(),path=[];let found=null,nodes=0;
+  const h=(c,m)=>{let b=255;for(let r=0;r<4;r++){const v=Math.max(cD[r][c],mD[r][m]);if(v<b)b=v;}return b;};
+  function dfs(c,m,g,bound,last){const hv=h(c,m);if(g+hv>bound)return false;
+    if(hv===0){found=path.slice();return true;}
+    if((++nodes&0xffff)===0&&Date.now()-t0>limit)throw new Error('timeout');
+    for(const i of ALLOW[last]){path.push(i);if(dfs(cT[i][c],mT[i][m],g+1,bound,i))return true;path.pop();}return false;}
+  for(let b=h(c0,m0);b<=40;b++)if(dfs(c0,m0,0,b,NM))return found.map(i=>MOVES[i].name);
+  return null;
+}
+function solveFast(c0,m0){
+  let R=0;for(let r=1;r<4;r++)if(cD[r][c0]<cD[R][c0])R=r;
+  const seq=[];let c=c0,m=m0;
+  while(cD[R][c]>0){for(let i=0;i<NM;i++){if(cD[R][cT[i][c]]===cD[R][c]-1){seq.push(i);c=cT[i][c];m=mT[i][m];break;}}}
+  const path=[];let found=null;
+  function dfs(c,m,g,bound,last){const hv=Math.max(cD[R][c],mD[R][m]);if(g+hv>bound)return false;
+    if(hv===0){found=path.slice();return true;}
+    for(const i of ALLOW[last]){path.push(i);if(dfs(cT[i][c],mT[i][m],g+1,bound,i))return true;path.pop();}return false;}
+  const last=seq.length?seq[seq.length-1]:NM;
+  for(let b=mD[R][m];b<=40;b++)if(dfs(c,m,0,b,last))break;
+  return seq.concat(found).map(i=>MOVES[i].name);
+}
+self.onmessage=e=>{
+  try{
+    init();
+    const [c0,m0]=toState(e.data.pieces,e.data.cyc);
+    let moves,optimal=true;
+    try{moves=solveOpt(c0,m0,8000);}catch(err){if(err.message!=='timeout')throw err;moves=solveFast(c0,m0);optimal=false;}
+    self.postMessage({moves,optimal});
+  }catch(err){self.postMessage({error:err.message});}
+};
+</script>
+
+<script>
+const COLORS=['W','B','R','O','Y','G'];
+const NAMES={W:'blanc',B:'bleu',R:'rouge',O:'orange',Y:'jaune',G:'vert'};
+const $=id=>document.getElementById(id);
+const blankFace=()=>[['',''],['',''],['',''],['','']];
+let grid={p1:{top:{near:'',left:'',right:'',far:''},L:blankFace(),R:blankFace()},p2:{top:{near:'',left:'',right:'',far:''},L:blankFace(),R:blankFace()}};
+const photos=[null,null];
+let brush='R';
+
+// ---------- photos ----------
+function loadImage(file){return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=()=>{const img=new Image();img.onerror=rej;img.onload=()=>{
+  const max=1280,s=Math.min(1,max/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+  cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);const ctx=cv.getContext('2d');ctx.drawImage(img,0,0,cv.width,cv.height);
+  res({url:cv.toDataURL('image/jpeg',.9),w:cv.width,h:cv.height,data:ctx.getImageData(0,0,cv.width,cv.height).data});};img.src=r.result;};r.readAsDataURL(file);});}
+function setStatus(id,msg,err){const el=$(id);el.textContent=msg;el.classList.toggle('err',!!err);}
+document.querySelectorAll('.shot input').forEach(inp=>inp.addEventListener('change',async()=>{
+  const f=inp.files[0];if(!f)return;const i=+inp.dataset.i;
+  try{const ph=await loadImage(f);
+    ph.pts={F:[.49,.19],L:[.19,.28],N:[.47,.40],R:[.78,.29],LB:[.28,.75],NB:[.47,.84],RB:[.68,.74]};
+    for(const k in ph.pts)ph.pts[k]=[ph.pts[k][0]*ph.w,ph.pts[k][1]*ph.h];
+    photos[i]=ph;const lab=inp.closest('.shot');lab.classList.add('has');lab.querySelector('img').src=ph.url;
+    setStatus('readStatus','');renderMarks();readPhoto(i);openEditor(false);
+  }catch(e){setStatus('readStatus','Impossible d\'ouvrir cette image. Essaie une photo JPEG ou PNG.',true);}
+}));
+
+// geometry: unit square -> quad (0,0)=p0,(1,0)=p1,(1,1)=p2,(0,1)=p3
+function sq2quad(p0,p1,p2,p3){
+  const [x0,y0]=p0,[x1,y1]=p1,[x2,y2]=p2,[x3,y3]=p3;
+  const dx1=x1-x2,dx2=x3-x2,dy1=y1-y2,dy2=y3-y2,sx=x0-x1+x2-x3,sy=y0-y1+y2-y3,den=dx1*dy2-dx2*dy1||1e-9;
+  const g=(sx*dy2-dx2*sy)/den,h=(dx1*sy-sx*dy1)/den;
+  const a=x1-x0+g*x1,b=x3-x0+h*x3,c=x0,d=y1-y0+g*y1,e=y3-y0+h*y3,f=y0;
+  return (u,v)=>{const w=g*u+h*v+1;return [(a*u+b*v+c)/w,(d*u+e*v+f)/w];};
+}
+// list of cells for a photo: {key:[grid part, ...], u0,u1,v0,v1, H}
+function cellsOf(ph){
+  const P=ph.pts,out=[];
+  const Ht=sq2quad(P.L,P.N,P.R,P.F);
+  [['left',0,0],['near',.5,0],['right',.5,.5],['far',0,.5]].forEach(([k,u,v])=>out.push({part:'top',k,H:Ht,u0:u,v0:v,du:.5,dv:.5}));
+  const HL=sq2quad(P.L,P.N,P.NB,P.LB),HR=sq2quad(P.N,P.R,P.RB,P.NB);
+  for(let r=0;r<4;r++)for(let c=0;c<2;c++){out.push({part:'L',r,c,H:HL,u0:c/2,v0:r/4,du:.5,dv:.25});out.push({part:'R',r,c,H:HR,u0:c/2,v0:r/4,du:.5,dv:.25});}
+  return out;
+}
+function sampleCell(ph,cell){
+  const rs=[],gs=[],bs=[];
+  for(let i=0;i<5;i++)for(let j=0;j<5;j++){
+    const [x,y]=cell.H(cell.u0+cell.du*(.2+.15*i),cell.v0+cell.dv*(.2+.15*j));
+    const xi=Math.min(ph.w-1,Math.max(0,Math.round(x))),yi=Math.min(ph.h-1,Math.max(0,Math.round(y))),o=(yi*ph.w+xi)*4;
+    rs.push(ph.data[o]);gs.push(ph.data[o+1]);bs.push(ph.data[o+2]);}
+  const med=a=>a.sort((p,q)=>p-q)[12];return [med(rs),med(gs),med(bs)];
+}
+function hsv([r,g,b]){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
+  if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360;}
+  return [h,mx?d/mx:0,mx];}
+function classify(rgb){const [h,s,v]=hsv(rgb);
+  if(s<.35&&v>.5)return 'W';
+  if(h>=330||h<11)return 'R';if(h<37)return 'O';if(h<75)return 'Y';if(h<170)return 'G';if(h<265)return 'B';return 'R';}
+const rawRGB={p1:{},p2:{}};
+function readPhoto(i){
+  const ph=photos[i];if(!ph)return;const k=i?'p2':'p1';
+  for(const cell of cellsOf(ph)){const rgb=sampleCell(ph,cell),col=classify(rgb);
+    const id=cell.part==='top'?'top-'+cell.k:`${cell.part}-${cell.r}-${cell.c}`;rawRGB[k][id]=rgb;
+    if(cell.part==='top')grid[k].top[cell.k]=col;else grid[k][cell.part][cell.r][cell.c]=col;}
+  balance();
+}
+// if both photos read and counts are off, redistribute by hue (standard tower: 4 white, 4 blue, 8 of R O Y G)
+function balance(){
+  if(Object.keys(rawRGB.p1).length<20||Object.keys(rawRGB.p2).length<20)return;
+  const items=[];['p1','p2'].forEach(k=>{const g=grid[k];
+    Object.keys(g.top).forEach(t=>items.push({get:()=>g.top[t],set:c=>g.top[t]=c,rgb:rawRGB[k]['top-'+t]}));
+    ['L','R'].forEach(f=>{for(let r=0;r<4;r++)for(let c=0;c<2;c++)items.push({get:()=>g[f][r][c],set:x=>g[f][r][c]=x,rgb:rawRGB[k][`${f}-${r}-${c}`]});});});
+  const n={};items.forEach(it=>n[it.get()]=(n[it.get()]||0)+1);
+  if(n.W===4&&n.B===4&&['R','O','Y','G'].every(c=>n[c]===8))return;
+  // whites = 4 least saturated
+  const sorted=items.slice().sort((a,b)=>hsv(a.rgb)[1]-hsv(b.rgb)[1]);
+  sorted.slice(0,4).forEach(it=>it.set('W'));
+  const rest=sorted.slice(4).map(it=>{let h=hsv(it.rgb)[0];if(h>=300)h-=360;return {it,h};}).sort((a,b)=>a.h-b.h);
+  const plan=[['R',8],['O',8],['Y',8],['G',8],['B',4]];let p=0;
+  plan.forEach(([c,cnt])=>{for(let j=0;j<cnt;j++)rest[p++].it.set(c);});
+}
+
+// ---------- markers ----------
+const EDGES=[['L','F'],['F','R'],['L','N'],['N','R'],['L','LB'],['N','NB'],['R','RB'],['LB','NB'],['NB','RB']];
+const SVGNS='http://www.w3.org/2000/svg';
+function renderMarks(){
+  $('markSec').hidden=!(photos[0]||photos[1]);const box=$('marks');box.innerHTML='';
+  photos.forEach((ph,i)=>{if(!ph)return;
+    const wrap=document.createElement('div');wrap.className='mark';
+    wrap.innerHTML=`<img src="${ph.url}" alt="Photo ${i+1}"><span class="cap">Photo ${i+1}</span>`;
+    const svg=document.createElementNS(SVGNS,'svg');svg.setAttribute('viewBox',`0 0 ${ph.w} ${ph.h}`);svg.setAttribute('preserveAspectRatio','none');
+    wrap.appendChild(svg);box.appendChild(wrap);
+    const u=ph.w/100;
+    const draw=()=>{
+      svg.innerHTML='';
+      EDGES.forEach(([a,b])=>{const l=document.createElementNS(SVGNS,'line');l.setAttribute('class','edge');l.setAttribute('stroke-width',u*.45);
+        l.setAttribute('x1',ph.pts[a][0]);l.setAttribute('y1',ph.pts[a][1]);l.setAttribute('x2',ph.pts[b][0]);l.setAttribute('y2',ph.pts[b][1]);svg.appendChild(l);});
+      const k=i?'p2':'p1';
+      cellsOf(ph).forEach(cell=>{const [x,y]=cell.H(cell.u0+cell.du/2,cell.v0+cell.dv/2);
+        const col=cell.part==='top'?grid[k].top[cell.k]:grid[k][cell.part][cell.r][cell.c];
+        const c=document.createElementNS(SVGNS,'circle');c.setAttribute('class','smp');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',u*1.3);
+        c.setAttribute('stroke-width',u*.4);c.setAttribute('fill',col?getComputedStyle(document.documentElement).getPropertyValue('--'+col):'#8E9AA3');svg.appendChild(c);});
+      Object.keys(ph.pts).forEach(name=>{
+        const g=document.createElementNS(SVGNS,'g');g.setAttribute('class','hdl');g.setAttribute('transform',`translate(${ph.pts[name][0]},${ph.pts[name][1]})`);
+        g.innerHTML=`<circle class="hit" r="${u*7}"/><circle class="ring" r="${u*3.2}" stroke-width="${u*.5}"/><circle class="dot" r="${u*.9}"/>`;
+        g.addEventListener('pointerdown',ev=>{ev.preventDefault();g.setPointerCapture(ev.pointerId);
+          const move=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(svg.getScreenCTM().inverse());
+            ph.pts[name]=[Math.max(0,Math.min(ph.w,q.x)),Math.max(0,Math.min(ph.h,q.y))];g.setAttribute('transform',`translate(${ph.pts[name][0]},${ph.pts[name][1]})`);
+            svg.querySelectorAll('line').forEach((l,idx)=>{const [a,b]=EDGES[idx];l.setAttribute('x1',ph.pts[a][0]);l.setAttribute('y1',ph.pts[a][1]);l.setAttribute('x2',ph.pts[b][0]);l.setAttribute('y2',ph.pts[b][1]);});};
+          const up=()=>{g.removeEventListener('pointermove',move);g.removeEventListener('pointerup',up);g.removeEventListener('pointercancel',up);
+            readPhoto(i);draw();renderEditor();};
+          g.addEventListener('pointermove',move);g.addEventListener('pointerup',up);g.addEventListener('pointercancel',up);});
+        svg.appendChild(g);});
+    };
+    ph.redraw=draw;draw();
+  });
+}
+$('manualBtn').onclick=()=>{openEditor(true);};
+
+// ---------- editor ----------
+function openEditor(scroll){$('editSec').hidden=false;renderEditor();if(scroll)$('editSec').scrollIntoView({behavior:'smooth'});}
+function renderPalette(){const p=$('palette');p.innerHTML='';COLORS.forEach(c=>{const b=document.createElement('button');
+  b.className='sw';b.style.background=`var(--${c})`;b.setAttribute('aria-pressed',c===brush);b.setAttribute('aria-label',NAMES[c]);
+  b.innerHTML=`<span>${NAMES[c]}</span>`;b.onclick=()=>{brush=c;renderPalette();};p.appendChild(b);});}
+function stk(get,set,label){const b=document.createElement('button');b.className='stk';b.setAttribute('aria-label',label);
+  const paint=()=>{const v=get();b.style.background=v?`var(--${v})`:'var(--E)';};paint();
+  b.onclick=()=>{set(brush);paint();renderCounts();photos.forEach(p=>p&&p.redraw&&p.redraw());};return b;}
+function renderEditor(){
+  renderPalette();const v=$('views');v.innerHTML='';
+  [['p1','Photo 1'],['p2','Photo 2']].forEach(([k,name])=>{
+    const g=grid[k],box=document.createElement('div');box.className='view';
+    box.innerHTML=`<div class="cap">${name}</div>`;
+    const d=document.createElement('div');d.className='diamond';
+    ['far','right','left','near'].forEach(pos=>d.appendChild(stk(()=>g.top[pos],c=>g.top[pos]=c,`${name}, dessus ${pos}`)));
+    box.appendChild(d);
+    const fs=document.createElement('div');fs.className='faces';
+    [['L','gauche'],['R','droite']].forEach(([fk,fn])=>{const f=document.createElement('div');f.className='face';
+      for(let r=0;r<4;r++)for(let c=0;c<2;c++)f.appendChild(stk(()=>g[fk][r][c],x=>g[fk][r][c]=x,`${name}, face ${fn}, rangée ${r+1}, colonne ${c+1}`));
+      fs.appendChild(f);});
+    box.appendChild(fs);v.appendChild(box);
+  });
+  renderCounts();
+}
+function allStickers(){const a=[];['p1','p2'].forEach(k=>{const g=grid[k];Object.values(g.top).forEach(x=>a.push(x));['L','R'].forEach(f=>g[f].forEach(r=>r.forEach(x=>a.push(x))));});return a;}
+function renderCounts(){const a=allStickers(),el=$('counts');el.innerHTML='';
+  const n={};a.forEach(x=>n[x]=(n[x]||0)+1);
+  COLORS.forEach(c=>{const s=document.createElement('span');s.innerHTML=`<i style="background:var(--${c})"></i>${n[c]||0}`;el.appendChild(s);});
+  if(n['']){const s=document.createElement('span');s.className='bad';s.textContent=`${n['']} vide${n['']>1?'s':''}`;el.appendChild(s);}
+}
+
+// ---------- model ----------
+function buildPieces(){
+  const p1l=grid.p1.L,p1r=grid.p1.R,p2l=grid.p2.L,p2r=grid.p2.R;
+  const t1=grid.p1.top,t2=grid.p2.top,pcs=[];
+  for(let z=0;z<4;z++){const r2=3-z;
+    const cols=[[p1r[z][0],p1l[z][1]],[p1l[z][0],p2l[r2][0]],[p2l[r2][1],p2r[r2][0]],[p2r[r2][1],p1r[z][1]]];
+    cols.forEach(([p,q],col)=>{const o={z,col,p,q};
+      if(z===0)o.cap=[t1.near,t1.left,t1.far,t1.right][col];
+      if(z===3)o.cap=[t2.far,t2.left,t2.near,t2.right][col];
+      pcs.push(o);});
+  }
+  return pcs;
+}
+const BAD='Ces couleurs ne correspondent pas à une vraie tour. Compare chaque case avec tes photos, surtout rouge et orange.';
+function analyse(){
+  const a=allStickers();if(a.includes(''))throw new Error('Il reste des cases vides.');
+  const n={};a.forEach(x=>n[x]=(n[x]||0)+1);
+  const caps=Object.keys(n).filter(c=>n[c]===4),sides=Object.keys(n).filter(c=>n[c]===8);
+  if(caps.length!==2||sides.length!==4)throw new Error('Il faut 4 cases pour 2 couleurs et 8 cases pour les 4 autres. Regarde le compteur.');
+  const tops=Object.values(grid.p1.top),cnt=c=>tops.filter(x=>x===c).length;
+  let T=cnt(caps[0])>cnt(caps[1])?caps[0]:cnt(caps[1])>cnt(caps[0])?caps[1]:(caps.includes('W')?'W':caps[0]);
+  const pcs=buildPieces(),nx={};
+  for(const pc of pcs){
+    if(caps.includes(pc.p)||caps.includes(pc.q))throw new Error(BAD);
+    if(pc.cap===undefined)continue;
+    if(!caps.includes(pc.cap))throw new Error(BAD);
+    pc.capTop=pc.cap===T;const native=pc.capTop?0:1,cl=pc.z===0?0:1;
+    const [a1,b1]=native===cl?[pc.p,pc.q]:[pc.q,pc.p];
+    if(nx[a1]&&nx[a1]!==b1)throw new Error(BAD);nx[a1]=b1;
+  }
+  const cyc=[sides[0]];for(let i=0;i<3;i++){const nxt=nx[cyc[i]];if(!nxt||cyc.includes(nxt))throw new Error(BAD);cyc.push(nxt);}
+  if(nx[cyc[3]]!==cyc[0])throw new Error(BAD);
+  return {pieces:pcs,cyc,T};
+}
+
+// ---------- solve ----------
+let worker=null;
+function getWorker(){if(!worker){const url=URL.createObjectURL(new Blob([$('solverSrc').textContent],{type:'text/javascript'}));worker=new Worker(url);}return worker;}
+let lastT='W';
+$('solveBtn').onclick=()=>{
+  let job;try{job=analyse();}catch(e){setStatus('solveStatus',e.message,true);return;}
+  lastT=job.T;$('solveBtn').disabled=true;setStatus('solveStatus','Calcul de la solution…');
+  const w=getWorker();
+  w.onmessage=e=>{$('solveBtn').disabled=false;
+    if(e.data.error){setStatus('solveStatus',BAD,true);return;}
+    setStatus('solveStatus','');showSolution(e.data.moves,e.data.optimal);};
+  w.onerror=()=>{$('solveBtn').disabled=false;setStatus('solveStatus','Le calcul a échoué. Réessaie.',true);};
+  w.postMessage({pieces:job.pieces,cyc:job.cyc});
+};
+function label(m){
+  const half={R2:'Droite',L2:'Gauche',F2:'Avant',B2:'Arrière'};
+  if(half[m])return {top:'moitié',main:half[m]+' ½'};
+  const lvl={U:1,u:2,d:3,D:4}[m[0]],suf=m.slice(1);
+  return {top:'étage',main:`${lvl} ${suf==='2'?'½':suf==="'"?'→':'←'}`};
+}
+let doneCount=0,curMoves=[];
+function showSolution(moves,optimal){
+  curMoves=moves;doneCount=0;
+  const topC=grid.p1.top,frontRow=grid.p1.L[0];
+  const chip=c=>`<span class="c" style="background:var(--${c})"></span>`;
+  $('hold').innerHTML=`Tiens la tour avec le dessus de la photo 1 en haut. Devant toi, bien à plat : la face qui était à gauche sur la photo 1. Sa rangée du haut : ${chip(frontRow[0])} ${NAMES[frontRow[0]]} à gauche, ${chip(frontRow[1])} ${NAMES[frontRow[1]]} à droite. Ne change plus de prise.`;
+  $('solInfo').textContent=moves.length?`${moves.length} mouvements${optimal?', la solution la plus courte':''}. Touche chaque mouvement une fois fait.`:'Ta tour est déjà résolue.';
+  $('solSec').hidden=false;renderMoves();$('solSec').scrollIntoView({behavior:'smooth'});
+}
+function renderMoves(){const box=$('moves');box.innerHTML='';
+  curMoves.forEach((m,i)=>{const l=label(m),b=document.createElement('button');
+    b.className='mv'+(i<doneCount?' done':i===doneCount?' next':'');
+    b.innerHTML=`<em>${i+1}. ${l.top}</em><strong>${l.main}</strong>`;
+    b.onclick=()=>{doneCount=i<doneCount?i:i+1;renderMoves();};box.appendChild(b);});
+  $('doneMsg').hidden=!(curMoves.length&&doneCount===curMoves.length);
+}
+$('resetBtn').onclick=()=>{doneCount=0;renderMoves();};
+</script>
+</body>
+</html>
